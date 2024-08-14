@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, FlatList, Dimensions  } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, FlatList,  } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 interface Task {
@@ -8,6 +8,7 @@ interface Task {
   description: string;
   status: boolean;
 }
+
 
 const App = () => {
   const [show, setShow] = useState(false);
