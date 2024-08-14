@@ -129,20 +129,7 @@ const ItemList: React.FC<{ id: number; name: string; description: string; status
 
   return (
     <View style={styles.container}>
-      <View>
-        <Text style={[styles.text, initialStatus && styles.strikethrough]}>{name}</Text>
-        <Text style={[styles.subtext, initialStatus && styles.strikethrough]}>{description}</Text>
-        <Text style={initialStatus ? styles.statusTextTrue : styles.statusTextFalse}>{statusText}</Text>
-      </View>
       <View style={styles.checkbuttons}>
-        <Pressable onPress={() => deleteTask(id)}>
-          <Icon
-          style={styles.icon}
-          name={"trash"}  
-          color={"darkred"}
-          size={30}       
-          />
-        </Pressable>
         <Pressable onPress={toggleCheckbox}>
           <Icon
             style={styles.icon}
@@ -151,7 +138,20 @@ const ItemList: React.FC<{ id: number; name: string; description: string; status
             color={initialStatus ? "green" : "gray"}
           />
         </Pressable>
+        <View style={styles.tastTextContainer}>
+          <Text style={[styles.text, initialStatus && styles.strikethrough]}>{name}</Text>
+          <Text style={[styles.subtext, initialStatus && styles.strikethrough]}>{description}</Text>
+          <Text style={initialStatus ? styles.statusTextTrue : styles.statusTextFalse}>{statusText}</Text>
+        </View>
       </View>
+      <Pressable onPress={() => deleteTask(id)}>
+        <Icon
+        style={styles.icon}
+        name={"trash"}  
+        color={"darkred"}
+        size={30}       
+        />
+      </Pressable>
     </View>
   );
 };
@@ -258,6 +258,7 @@ const styles = StyleSheet.create({
   },
   checkbuttons: {
     flexDirection: 'row',
+    alignItems: 'center',
   },
   icon: {
     marginHorizontal: 10,
@@ -278,6 +279,9 @@ const styles = StyleSheet.create({
     color: 'black',
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  tastTextContainer: {
+    marginLeft: 15,
   }
 });
 
