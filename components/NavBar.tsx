@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, FlatList } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, FlatList, Dimensions  } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 interface Task {
@@ -12,8 +12,8 @@ interface Task {
 const App = () => {
   const [show, setShow] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'pending'>('all');
 
-  // AGREGAR TAREAS
   const addTask = (name: string, description: string, status: boolean) => {
     const newTask: Task = {
       id: tasks.length + 1,
@@ -23,18 +23,37 @@ const App = () => {
     };
     setTasks([...tasks, newTask]);
   };
-  
-  // ELIMINAR TAREAS
+
   const deleteTask = (id: number) => {
     setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
+  };
+
+  const updateTaskStatus = (id: number, newStatus: boolean) => {
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === id ? { ...task, status: newStatus } : task
+      )
+    );
+  };
+
+  const filterTasks = () => {
+    switch (filterStatus) {
+      case 'completed':
+        return tasks.filter(task => task.status);
+      case 'pending':
+        return tasks.filter(task => !task.status);
+      default:
+        return tasks;
+    }
   };
 
   return (
     <View style={{ flex: 1 }}>
       <NavBar setShow={setShow} />
+      <FilterButtons setFilterStatus={setFilterStatus} />
       {show && <NewTaskWindow setShow={setShow} addTask={addTask} />}
       <FlatList
-        data={tasks}
+        data={filterTasks()}
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => 
         <ItemList 
@@ -43,6 +62,7 @@ const App = () => {
           description={item.description} 
           status={item.status}
           deleteTask={deleteTask}
+          updateTaskStatus={updateTaskStatus}  // Pass the update function here
         />
         }
       />
@@ -50,37 +70,24 @@ const App = () => {
   );
 };
 
-interface NavBarProps {
-  setShow: (show: boolean) => void;
-}
+const NavBar: React.FC<{ setShow: (show: boolean) => void }> = ({ setShow }) => (
+  <View style={styles.navBarContainer}>
+    <Text style={styles.text}>TodoApp</Text> 
+    <Pressable onPress={() => setShow(true)}>
+      <Icon name="plus-square" size={30} />
+    </Pressable>
+  </View>
+);
 
-// NAV BAR
-const NavBar: React.FC<NavBarProps> = ({ setShow }) => {
-  return (
-    <View style={styles.navBarContainer}>
-      <Text style={styles.text}>TodoApp</Text>
-      <Pressable onPress={() => setShow(true)}>
-        <Icon name="plus-square" size={30} />
-      </Pressable>
-    </View>
-  );
-};
-
-// CREAR UNA NUEVA TAREA
-interface NewTaskWindowProps {
-  setShow: (show: boolean) => void;
-  addTask: (name: string, description: string, status: false) => void;
-}
-
-const NewTaskWindow: React.FC<NewTaskWindowProps> = ({ setShow, addTask }) => {
+const NewTaskWindow: React.FC<{ setShow: (show: boolean) => void; addTask: (name: string, description: string, status: boolean) => void; }> = ({ setShow, addTask }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const status = false;
 
-const handleCreate = () => {
-  addTask(name, description, status);
-  setShow(false);
-};
+  const handleCreate = () => {
+    addTask(name, description, status);
+    setShow(false);
+  };
 
   return (
     <View style={styles.overlay}>
@@ -111,30 +118,20 @@ const handleCreate = () => {
   );
 };
 
-//LISTA DE TAREAS
-interface ItemListProps {
-  id: number;
-  name: string;
-  description: string;
-  status: boolean;
-  deleteTask: (id: number) => void;
-}
-
-const ItemList: React.FC<ItemListProps> = ({ id, name, description, status: initialStatus, deleteTask }) => {
-  const [checked, setChecked] = useState(initialStatus);
-  const [status, setStatus] = useState(initialStatus);
+const ItemList: React.FC<{ id: number; name: string; description: string; status: boolean; deleteTask: (id: number) => void; updateTaskStatus: (id: number, newStatus: boolean) => void; }> = ({ id, name, description, status: initialStatus, deleteTask, updateTaskStatus }) => {
   const toggleCheckbox = () => {
-    setChecked(!checked);
-    setStatus(!status);
+    const newStatus = !initialStatus;
+    updateTaskStatus(id, newStatus);
   };
-  const statusText = status ? "Completado" : "Pendiente";
+  
+  const statusText = initialStatus ? "Completado" : "Pendiente";
 
   return (
     <View style={styles.container}>
       <View>
-        <Text style={[styles.text, checked && styles.strikethrough]}>{name}</Text>
-        <Text style={[styles.subtext, checked && styles.strikethrough]}>{description}</Text>
-        <Text style={checked ? styles.statusTextTrue : styles.statusTextFalse}>{statusText}</Text>
+        <Text style={[styles.text, initialStatus && styles.strikethrough]}>{name}</Text>
+        <Text style={[styles.subtext, initialStatus && styles.strikethrough]}>{description}</Text>
+        <Text style={initialStatus ? styles.statusTextTrue : styles.statusTextFalse}>{statusText}</Text>
       </View>
       <View style={styles.checkbuttons}>
         <Pressable onPress={() => deleteTask(id)}>
@@ -148,15 +145,29 @@ const ItemList: React.FC<ItemListProps> = ({ id, name, description, status: init
         <Pressable onPress={toggleCheckbox}>
           <Icon
             style={styles.icon}
-            name={checked ? "check-square" : "square"}
+            name={initialStatus ? "check-square" : "square"}
             size={30}
-            color={checked ? "green" : "gray"}
+            color={initialStatus ? "green" : "gray"}
           />
         </Pressable>
       </View>
     </View>
   );
 };
+
+const FilterButtons: React.FC<{ setFilterStatus: (status: 'all' | 'completed' | 'pending') => void }> = ({ setFilterStatus }) => (
+  <View style={styles.filterContainer}>
+    <Pressable style={styles.filterButton} onPress={() => setFilterStatus('all')}>
+      <Text style={styles.filterButtonText}>Todo</Text>
+    </Pressable>
+    <Pressable style={styles.filterButton} onPress={() => setFilterStatus('completed')}>
+      <Text style={styles.filterButtonText}>Completadas</Text>
+    </Pressable>
+    <Pressable style={styles.filterButton} onPress={() => setFilterStatus('pending')}>
+      <Text style={styles.filterButtonText}>Pendientes</Text>
+    </Pressable>
+  </View>
+);
 
 const styles = StyleSheet.create({
   navBarContainer: {
@@ -250,6 +261,23 @@ const styles = StyleSheet.create({
   icon: {
     marginHorizontal: 10,
   },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    padding: 10,
+    backgroundColor: 'lightgray',
+  },
+  filterButton: {
+    marginHorizontal: 10,
+    padding: 10,
+    backgroundColor: 'white',
+    borderRadius: 5,
+  },
+  filterButtonText: {
+    color: 'black',
+    fontWeight: 'bold',
+    fontSize: 15,
+  }
 });
 
 export default App;
